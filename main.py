@@ -2,20 +2,16 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Load data from CSV file
 data = pd.read_csv('all_stocks_5yr.csv')
 
-# Preprocess data
 data['date'] = pd.to_datetime(data['date'])
+
 data = data.sort_values('date')
 
-# Select one stock for simplicity
-stock_data = data[data['Name'] == 'AAPL']  # You can change 'AAPL' to any other stock name
+stock_data = data[data['Name'] == 'AAPL']
 
-# Use 'close' prices as the target
 prices = stock_data['close'].values
 
-# Normalize data
 prices = (prices - np.min(prices)) / (np.max(prices) - np.min(prices))
 
 
@@ -30,10 +26,10 @@ def create_sequences(data, seq_length):
     return np.array(xs), np.array(ys)
 
 
-seq_length = 15  # Modified sequence length
+seq_length = 15
 X, y = create_sequences(prices, seq_length)
 
-# Split data into training, validation, and test sets
+
 split1 = int(0.7 * len(X))
 split2 = int(0.9 * len(X))
 X_train, y_train = X[:split1], y[:split1]
@@ -50,7 +46,6 @@ class GRU:
         self.l2_lambda = l2_lambda
         self.dropout_rate = dropout_rate
 
-        # Initialize weights
         limit = np.sqrt(6 / (input_size + hidden_size))
         self.W_z = np.random.uniform(-limit, limit, (hidden_size, input_size + hidden_size))
         self.b_z = np.zeros((hidden_size, 1))
@@ -64,16 +59,12 @@ class GRU:
         limit = np.sqrt(6 / (hidden_size + output_size))
         self.W_o = np.random.uniform(-limit, limit, (output_size, hidden_size))
         self.b_o = np.zeros((output_size, 1))
-
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-
     def tanh(self, x):
         return np.tanh(x)
-
     def relu(self, x):
         return np.maximum(0, x)
-
     def forward(self, x):
         T = x.shape[1]
         h = np.zeros((self.hidden_size, T))
