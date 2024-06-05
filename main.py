@@ -1,15 +1,6 @@
 import numpy as np
 import pandas as pd
-import random
 import matplotlib.pyplot as plt
-
-
-"""def set_seed(seed=42):
-    np.random.seed(seed)
-    random.seed(seed)
-
-
-set_seed(42)"""
 
 # Load data from CSV file
 data = pd.read_csv('all_stocks_5yr.csv')
@@ -137,7 +128,7 @@ class GRU:
                 y = np.array([[y]])
                 loss += self.backpropagation(x, y)
             loss /= len(X_train)
-            val_loss = self.evaluate(X_val, y_val, verbose=False)
+            val_loss, _ = self.evaluate(X_val, y_val, verbose=False)  # Pobierz tylko val_loss
             training_losses.append(loss)
             validation_losses.append(val_loss)
             print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss:.4f}, Val Loss: {val_loss:.4f}")
@@ -155,15 +146,17 @@ class GRU:
 
     def evaluate(self, X_test, y_test, verbose=True):
         total_loss = 0
+        predictions = []
         for x, y in zip(X_test, y_test):
             x = x.reshape(-1, self.input_size).T
             y = np.array([[y]])
             y_pred, _ = self.forward(x)
             total_loss += self.compute_loss(y_pred, y)
+            predictions.append(y_pred.item())
         average_loss = total_loss / len(X_test)
         if verbose:
             print(f"Test Loss: {average_loss:.4f}")
-        return average_loss
+        return average_loss, predictions
 
 
 def plot_loss(training_losses, validation_losses):
@@ -176,9 +169,22 @@ def plot_loss(training_losses, validation_losses):
     plt.show()
 
 
+def plot_predictions(y_test, y_pred):
+    plt.plot(y_test, label='Actual Prices')
+    plt.plot(y_pred, label='Predicted Prices')
+    plt.xlabel('Time')
+    plt.ylabel('Normalized Price')
+    plt.title('Actual vs Predicted Prices')
+    plt.legend()
+    plt.show()
+
+
 # Initialize and train GRU model
 gru = GRU(input_size=1, hidden_size=32, output_size=1, learning_rate=0.0005, l2_lambda=0.000005, dropout_rate=0.2)
 gru.train(X_train, y_train, X_val, y_val, epochs=300, early_stopping_rounds=50)
 
-# Evaluate GRU model
-gru.evaluate(X_test, y_test)
+# Evaluate GRU model and get predictions
+test_loss, predictions = gru.evaluate(X_test, y_test)
+
+# Plot actual vs predicted prices
+plot_predictions(y_test, predictions)
