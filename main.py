@@ -3,19 +3,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 data = pd.read_csv('all_stocks_5yr.csv')
-
 data['date'] = pd.to_datetime(data['date'])
-
 data = data.sort_values('date')
 
 stock_data = data[data['Name'] == 'AAPL']
 
 prices = stock_data['close'].values
-
 prices = (prices - np.min(prices)) / (np.max(prices) - np.min(prices))
 
 
-# Create sequences
 def create_sequences(data, seq_length):
     xs, ys = [], []
     for i in range(len(data) - seq_length):
@@ -28,8 +24,6 @@ def create_sequences(data, seq_length):
 
 seq_length = 15
 X, y = create_sequences(prices, seq_length)
-
-
 split1 = int(0.7 * len(X))
 split2 = int(0.9 * len(X))
 X_train, y_train = X[:split1], y[:split1]
@@ -61,11 +55,9 @@ class GRU:
         self.b_o = np.zeros((output_size, 1))
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-    def tanh(self, x):
-        return np.tanh(x)
     def relu(self, x):
         return np.maximum(0, x)
-    def forward(self, x):
+    def forward_prop(self, x):
         T = x.shape[1]
         h = np.zeros((self.hidden_size, T))
 
@@ -91,9 +83,9 @@ class GRU:
                     np.sum(self.W_z ** 2) + np.sum(self.W_r ** 2) + np.sum(self.W_h ** 2) + np.sum(self.W_o ** 2))
         return mse + l2_reg
 
-    def backpropagation(self, x, y_true):
+    def back_prop(self, x, y_true):
         T = x.shape[1]
-        y_pred, h = self.forward(x)
+        y_pred, h = self.forward_prop(x)
 
         loss = self.compute_loss(y_pred, y_true)
         dL_dy = 2 * (y_pred - y_true) / y_true.size
@@ -117,7 +109,7 @@ class GRU:
             for x, y in zip(X_train, y_train):
                 x = x.reshape(-1, self.input_size).T
                 y = np.array([[y]])
-                loss += self.backpropagation(x, y)
+                loss += self.back_prop(x, y)
             loss /= len(X_train)
             val_loss, _ = self.evaluate(X_val, y_val, verbose=False)  # Pobierz tylko val_loss
             training_losses.append(loss)
@@ -141,7 +133,7 @@ class GRU:
         for x, y in zip(X_test, y_test):
             x = x.reshape(-1, self.input_size).T
             y = np.array([[y]])
-            y_pred, _ = self.forward(x)
+            y_pred, _ = self.forward_prop(x)
             total_loss += self.compute_loss(y_pred, y)
             predictions.append(y_pred.item())
         average_loss = total_loss / len(X_test)
@@ -170,12 +162,9 @@ def plot_predictions(y_test, y_pred):
     plt.show()
 
 
-# Initialize and train GRU model
 gru = GRU(input_size=1, hidden_size=32, output_size=1, learning_rate=0.0005, l2_lambda=0.000005, dropout_rate=0.2)
 gru.train(X_train, y_train, X_val, y_val, epochs=300, early_stopping_rounds=50)
 
-# Evaluate GRU model and get predictions
 test_loss, predictions = gru.evaluate(X_test, y_test)
 
-# Plot actual vs predicted prices
 plot_predictions(y_test, predictions)
